@@ -17,6 +17,12 @@ struct MainWindowView: View {
                     Label("Time Log & Export", systemImage: "clock.arrow.circlepath")
                 }
                 .tag(MainTab.log)
+
+            StorageView()
+                .tabItem {
+                    Label("Storage", systemImage: "externaldrive.badge.icloud")
+                }
+                .tag(MainTab.storage)
         }
         .frame(minWidth: 780, minHeight: 540)
     }

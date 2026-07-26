@@ -8,6 +8,11 @@ let package = Package(
         .executableTarget(
             name: "TimeTracker",
             path: "Sources/TimeTracker"
+        ),
+        .testTarget(
+            name: "TimeTrackerTests",
+            dependencies: ["TimeTracker"],
+            path: "Tests/TimeTrackerTests"
         )
     ]
 )

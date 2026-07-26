@@ -3,6 +3,7 @@ import Foundation
 enum MainTab: String, CaseIterable, Identifiable {
     case clients
     case log
+    case storage
 
     var id: String { rawValue }
 }

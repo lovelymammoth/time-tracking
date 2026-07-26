@@ -12,7 +12,16 @@ Built with SwiftUI (`MenuBarExtra`), no third-party dependencies. Runs entirely 
 - Manage clients and their projects
 - Time Log tab: filter by client and date range, see totals
 - Export a client's time log as native `.xlsx` or PDF
-- Data stored locally at `~/Library/Application Support/TimeTracker/data.json`
+- Choose local storage or a folder synced by iCloud Drive, Google Drive, Dropbox, or another file-sync service
+- Local data is stored at `~/Library/Application Support/TimeTracker/data.json`
+
+## Cloud-synced database
+
+Open the main window and select the **Storage** tab. Choose a folder under iCloud Drive, Google Drive, or another desktop sync provider. Time Tracker copies the current database to `TimeTracker-data.json` in that folder and remembers the location across launches.
+
+If the selected folder already contains a Time Tracker database, the app lets you either open the existing database or replace it with the data currently open in the app. Returning to local storage copies the current data back to this Mac and leaves the cloud copy intact.
+
+Allow syncing to finish before opening the app on another Mac. Do not edit the same database from two Macs at once, since the cloud provider can create conflicted copies.
 
 ## Requirements
 
@@ -66,7 +75,7 @@ System Settings → General → Login Items → add `Time Tracker.app`.
 Sources/TimeTracker/
   Models/         Client, Project, TimeEntry
   Store/          DataStore (persistence + stopwatch state), AppNavigation
-  Views/          Menu bar UI, Clients & Projects tab, Time Log tab, entry edit sheet
+  Views/          Menu bar UI, Clients & Projects, Time Log, Storage, entry edit sheet
   Export/         Native XLSX (hand-written OOXML, zipped) and PDF (Core Graphics) exporters
   TimeTrackerApp.swift  App entry point (MenuBarExtra + main window)
 Resources/AppIcon.icns

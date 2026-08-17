@@ -52,8 +52,7 @@ struct MenuBarContentView: View {
             Text("No clients yet.")
                 .foregroundStyle(.secondary)
             Button("Add a Client…") {
-                navigation.selectedTab = .clients
-                openWindow(id: "main")
+                showMainWindow(tab: .clients)
             }
         }
     }
@@ -153,14 +152,12 @@ struct MenuBarContentView: View {
     private var footerButtons: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button {
-                navigation.selectedTab = .clients
-                openWindow(id: "main")
+                showMainWindow(tab: .clients)
             } label: {
                 Label("Clients & Projects…", systemImage: "person.2.fill")
             }
             Button {
-                navigation.selectedTab = .log
-                openWindow(id: "main")
+                showMainWindow(tab: .log)
             } label: {
                 Label("Time Log & Export…", systemImage: "clock.arrow.circlepath")
             }
@@ -173,6 +170,12 @@ struct MenuBarContentView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.tint)
+    }
+
+    private func showMainWindow(tab: MainTab) {
+        navigation.selectedTab = tab
+        openWindow(id: "main")
+        MainWindowPresenter.bringToFront()
     }
 
     private func setDefaultSelection() {

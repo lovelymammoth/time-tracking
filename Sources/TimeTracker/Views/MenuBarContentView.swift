@@ -43,7 +43,9 @@ struct MenuBarContentView: View {
         .onAppear(perform: setDefaultSelection)
         .onChange(of: store.clients) { _ in setDefaultSelection() }
         .onChange(of: selectedClientId) { _ in
-            selectedProjectId = availableProjects.first?.id
+            selectedProjectId = store.isRunning
+                ? store.runningProjectId
+                : availableProjects.first?.id
         }
     }
 
@@ -75,12 +77,32 @@ struct MenuBarContentView: View {
             }
             .disabled(store.isRunning || selectedClientId == nil)
 
+            TextField("Task notes (optional)", text: runningNotesBinding, axis: .vertical)
+                .lineLimit(2...4)
+
             if store.isRunning {
-                Button(role: .destructive) {
-                    store.stopTimer()
-                } label: {
-                    Label("Stop Timer", systemImage: "stop.circle.fill")
+                HStack {
+                    Button {
+                        if store.isPaused {
+                            store.resumeTimer()
+                        } else {
+                            store.pauseTimer()
+                        }
+                    } label: {
+                        Label(
+                            store.isPaused ? "Resume" : "Pause",
+                            systemImage: store.isPaused ? "play.circle.fill" : "pause.circle.fill"
+                        )
                         .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button(role: .destructive) {
+                        store.stopTimer()
+                    } label: {
+                        Label("Stop", systemImage: "stop.circle.fill")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             } else {
                 Button {
@@ -179,8 +201,20 @@ struct MenuBarContentView: View {
     }
 
     private func setDefaultSelection() {
+        if store.isRunning {
+            selectedClientId = store.runningClientId
+            selectedProjectId = store.runningProjectId
+            return
+        }
         if selectedClientId == nil { selectedClientId = store.clients.first?.id }
         if selectedProjectId == nil { selectedProjectId = availableProjects.first?.id }
+    }
+
+    private var runningNotesBinding: Binding<String> {
+        Binding(
+            get: { store.runningNotes },
+            set: { store.updateRunningNotes($0) }
+        )
     }
 
     private func addManualEntry() {

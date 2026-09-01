@@ -7,17 +7,17 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: store.isRunning ? "timer" : "clock")
-            if store.isRunning, let start = store.runningStart {
-                Text(elapsedString(from: start, to: now))
+            Image(systemName: store.isPaused ? "pause.circle.fill" : (store.isRunning ? "timer" : "clock"))
+            if store.isRunning {
+                Text(elapsedString(seconds: store.elapsedDuration(at: now)))
                     .monospacedDigit()
             }
         }
         .onReceive(timer) { date in now = date }
     }
 
-    private func elapsedString(from start: Date, to now: Date) -> String {
-        let interval = max(0, Int(now.timeIntervalSince(start)))
+    private func elapsedString(seconds: TimeInterval) -> String {
+        let interval = max(0, Int(seconds))
         let h = interval / 3600
         let m = (interval % 3600) / 60
         let s = interval % 60

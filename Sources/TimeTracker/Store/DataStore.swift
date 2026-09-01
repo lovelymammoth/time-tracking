@@ -18,6 +18,10 @@ final class DataStore: ObservableObject {
     @Published var runningClientId: UUID?
     @Published var runningProjectId: UUID?
     @Published var runningStart: Date?
+    @Published var isPaused: Bool = false
+    @Published var runningPausedAt: Date?
+    @Published var runningPausedDuration: TimeInterval = 0
+    @Published var runningNotes: String = ""
 
     @Published private(set) var databaseURL: URL
     @Published private(set) var lastSavedAt: Date?
@@ -264,33 +268,65 @@ final class DataStore: ObservableObject {
 
     // MARK: Stopwatch
 
-    func startTimer(clientId: UUID, projectId: UUID) {
+    func startTimer(clientId: UUID, projectId: UUID, at start: Date = Date()) {
         isRunning = true
+        isPaused = false
         runningClientId = clientId
         runningProjectId = projectId
-        runningStart = Date()
+        runningStart = start
+        runningPausedAt = nil
+        runningPausedDuration = 0
         persistRunningTimer()
     }
 
+    func pauseTimer(at pauseDate: Date = Date()) {
+        guard isRunning, !isPaused else { return }
+        isPaused = true
+        runningPausedAt = pauseDate
+        persistRunningTimer()
+    }
+
+    func resumeTimer(at resumeDate: Date = Date()) {
+        guard isRunning, isPaused, let pausedAt = runningPausedAt else { return }
+        runningPausedDuration += max(0, resumeDate.timeIntervalSince(pausedAt))
+        isPaused = false
+        runningPausedAt = nil
+        persistRunningTimer()
+    }
+
+    func updateRunningNotes(_ notes: String) {
+        runningNotes = notes
+        if isRunning {
+            persistRunningTimer()
+        }
+    }
+
+    func elapsedDuration(at date: Date = Date()) -> TimeInterval {
+        guard let start = runningStart else { return 0 }
+        let effectiveEnd = isPaused ? (runningPausedAt ?? date) : date
+        return max(0, effectiveEnd.timeIntervalSince(start) - runningPausedDuration)
+    }
+
     @discardableResult
-    func stopTimer() -> TimeEntry? {
+    func stopTimer(at stopDate: Date = Date()) -> TimeEntry? {
         guard let start = runningStart, let clientId = runningClientId, let projectId = runningProjectId else { return nil }
-        let duration = Date().timeIntervalSince(start)
-        let entry = TimeEntry(clientId: clientId, projectId: projectId, date: start, startTime: start, durationSeconds: duration)
+        let duration = elapsedDuration(at: stopDate)
+        let entry = TimeEntry(
+            clientId: clientId,
+            projectId: projectId,
+            date: start,
+            startTime: start,
+            durationSeconds: duration,
+            notes: runningNotes
+        )
         addEntry(entry)
-        isRunning = false
-        runningClientId = nil
-        runningProjectId = nil
-        runningStart = nil
+        resetRunningTimer()
         clearPersistedRunningTimer()
         return entry
     }
 
     func cancelTimer() {
-        isRunning = false
-        runningClientId = nil
-        runningProjectId = nil
-        runningStart = nil
+        resetRunningTimer()
         clearPersistedRunningTimer()
     }
 
@@ -298,12 +334,31 @@ final class DataStore: ObservableObject {
         defaults.set(runningClientId?.uuidString, forKey: "running.clientId")
         defaults.set(runningProjectId?.uuidString, forKey: "running.projectId")
         defaults.set(runningStart, forKey: "running.start")
+        defaults.set(isPaused, forKey: "running.isPaused")
+        defaults.set(runningPausedAt, forKey: "running.pausedAt")
+        defaults.set(runningPausedDuration, forKey: "running.pausedDuration")
+        defaults.set(runningNotes, forKey: "running.notes")
     }
 
     private func clearPersistedRunningTimer() {
         defaults.removeObject(forKey: "running.clientId")
         defaults.removeObject(forKey: "running.projectId")
         defaults.removeObject(forKey: "running.start")
+        defaults.removeObject(forKey: "running.isPaused")
+        defaults.removeObject(forKey: "running.pausedAt")
+        defaults.removeObject(forKey: "running.pausedDuration")
+        defaults.removeObject(forKey: "running.notes")
+    }
+
+    private func resetRunningTimer() {
+        isRunning = false
+        isPaused = false
+        runningClientId = nil
+        runningProjectId = nil
+        runningStart = nil
+        runningPausedAt = nil
+        runningPausedDuration = 0
+        runningNotes = ""
     }
 
     private func restoreRunningTimer() {
@@ -316,5 +371,13 @@ final class DataStore: ObservableObject {
         runningClientId = clientId
         runningProjectId = projectId
         runningStart = start
+        isPaused = defaults.bool(forKey: "running.isPaused")
+        runningPausedAt = defaults.object(forKey: "running.pausedAt") as? Date
+        runningPausedDuration = defaults.double(forKey: "running.pausedDuration")
+        runningNotes = defaults.string(forKey: "running.notes") ?? ""
+
+        if isPaused, runningPausedAt == nil {
+            isPaused = false
+        }
     }
 }
